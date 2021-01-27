@@ -19,7 +19,7 @@ st.set_page_config(page_title="USBR API Data Explorer", page_icon=None, layout='
 
 #maindf=pd.DataFrame()
 col1, col2, col3 = st.beta_columns((1,3,1))
-col1.title("Davis and Parker Stretch")
+col1.title("Davis Stretch")
 #st.header("Make Site / Parameter selection from the sidebar")
 today = datetime.date.today() + datetime.timedelta(days=1)
 previous = today + datetime.timedelta(days=-6)

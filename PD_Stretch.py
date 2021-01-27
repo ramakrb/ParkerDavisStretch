@@ -75,7 +75,8 @@ def set_pub():
 
 def plotData(df, colm):
     set_pub()
-    fig = make_subplots(rows=1, cols=1, subplot_titles = ["Davis Release & BBBLC"])
+    plot_name = ' & '.join(df.columns)
+    fig = make_subplots(rows=1, cols=1, subplot_titles = [plot_name])
     fig.append_trace(go.Scatter(x = df.index, y=df.iloc[:,0], mode='lines+markers', name=df.columns[0]), row=1, col=1)
     fig.append_trace(go.Scatter(x=df.index, y=df.iloc[:, 1], mode='lines+markers', name=df.columns[1]), row=1, col=1)
     fig.update_layout(height=700, width=1200, showlegend=True)#, title_text="Stacked Subplots")

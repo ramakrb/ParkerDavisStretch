@@ -1,11 +1,9 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import base64
 from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import rc
-import seaborn as sns
 import numpy as np
 import os
 from bs4 import BeautifulSoup
@@ -16,25 +14,31 @@ import dataretrieval.nwis as nwis
 
 st.set_page_config(page_title="USBR API Data Explorer", page_icon=None, layout='wide', initial_sidebar_state='auto')
 
+sdids = ['2166','2336','7777','2337','2146','2119','2021','20179','20189','2020','20184','2013','21877','2731']
+sites = ['Davis Release','BBBLC','BNBLC','RS41LC','Parker Release','PGLC','WWLC','BIBLC','BMPLC','TFLC','BOBLC','CLC','PPGLC','MLLC']
+bor_sites = dict(zip(sdids, sites))
+
 col1, col2, col3 = st.beta_columns((1,3,1))
 col1.title("Davis and Parker Stretch")
+sdid_list = ",".join(sdids[:-2])
+sdid_yao = '21877,2731'
 today = datetime.date.today() + datetime.timedelta(days=1)
 previous = today + datetime.timedelta(days=-6)
 start_date = col1.date_input('Start Date',previous)
 end_date = col1.date_input('End Date',today)
 t1 = start_date.strftime("%Y-%m-%d")
 t2 = end_date.strftime("%Y-%m-%d")
-col1.markdown("""
-***
-""")
+
 
 def load_data(sdid, sel_int, t1, t2, db='lchdb'):
     url = "https://www.usbr.gov/pn-bin/hdb/hdb.pl?svr=" + db + "&sdi=" + str(sdid) + "&tstp=" + \
           str(sel_int) + "&t1=" + str(t1) + "&t2=" + str(t2) + "&table=R&mrid=0&format=2"
     html = pd.read_html(url)
     df1 = html[0]
-    df1['DATETIME'] = pd.to_datetime(df1['DATETIME'])
-    df1 = df1.rename(columns={'DATETIME': 'datetime'})
+    cnames = [bor_sites.get(key) for key in sdid.split(',')]
+    cnames.insert(0,'datetime')
+    df1.columns = cnames
+    df1['datetime'] = pd.to_datetime(df1['datetime'])
     df1.set_index('datetime', inplace=True)
     return df1
 
@@ -51,6 +55,12 @@ def usgs_data(siteNumber, t1, t2,sel_int = 'HR',parameterCd = '00060'):
     df.columns = [cname.title() + ' (USGS)']
     df = df.tz_localize(None)
     return (df)
+
+def bor_usgs(bor,usgs,t1,t2):
+    df_bor = load_data(bor,'HR',t1,t2)
+    df_usgs = usgs_data(usgs,t1,t2)
+    df_comb = df_bor.join(df_usgs, how='inner')
+    return df_comb
 
 def set_pub():
     rc('font', weight='bold')
@@ -113,65 +123,116 @@ def show_stats(df):
             ***
             """)
 
-Dvs_usgs_checkbox = col1.checkbox('Davis / Below Davis USGS Flows', value = False)
+def setup_reach(df,hr):
+    col2.subheader('Lagged Hours: ' + str(hr))
+    df.iloc[:, [0]] = df.iloc[:, [0]].shift(hr)
+    plotData(df.dropna(), col2)
+    show_stats(df)
+@st.cache
+def get_all_data(t1,t2):
+    lc1 = load_data(sdid_list, 'HR', t1, t2)
+    yao1 = load_data(sdid_yao, 'HR', t1, t2, db='yaohdb')
+    all = lc1.join(yao1.round(), how='inner')
+    all = all.join(usgs_data('09423000', t1, t2), how='inner')
+    all = all.join(usgs_data('09427520', t1, t2), how='inner')
+    all = all.join(usgs_data('09429100', t1, t2), how='inner')
+    return all
 
-if Dvs_usgs_checkbox:
-    df_bor = load_data('2166','HR',t1,t2)
-    df_bor.columns = ['Davis Release']
-    df_usgs = usgs_data('09423000',t1,t2)
-    df_bordata = df_bor.join(df_usgs, how='inner')
 
-    col2.header("Use the slider to lag flow.")
-    hours01 = col2.slider('Travel Time Davis Dam to Blw Davis USGS Gage',0,15,0)
-    col2.header('Lagged Hours: ' + str(hours01))
-    df_bordata.iloc[:,[0]] = df_bordata.iloc[:,[0]].shift(hours01)
-    plotData(df_bordata.dropna(), col2)
-    show_stats(df_bordata)
+bor_all = get_all_data(t1,t2)
+selected_stretch = col1.radio("Stretch", ['Below Davis Stretch', 'Below Parker Stretch'])
+if (selected_stretch == 'Below Davis Stretch'):
+    col1.markdown("""
+    """)
+    Dvs_usgs_checkbox = col1.checkbox('Davis / Below Davis USGS Flows', value = False)
+    if Dvs_usgs_checkbox:
+        df_dvsusgs = bor_all.iloc[:,[0,14]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours01 = col2.slider('Travel Time Davis Dam to Blw Davis USGS Gage',0,15,0)
+        setup_reach(df_dvsusgs, hours01)
 
-Dvs_BBB_checkbox = col1.checkbox('Davis / Below Big Bend Flows', value = False)
+    Dvs_BBB_checkbox = col1.checkbox('Davis / Below Big Bend Flows', value = False)
+    if Dvs_BBB_checkbox:
+        df_dvsbbb = bor_all.iloc[:,[0,1]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours1 = col2.slider('Travel Time Davis Dam to BBBLC',0,15,0)
+        setup_reach(df_dvsbbb, hours1)
 
-if Dvs_BBB_checkbox:
-    df_bordata = load_data('2166,2336','HR',t1,t2)
-    df_bordata.columns = ['Davis Release','BBBLC']
-    col2.header("Use the slider to lag flow.")
-    hours1 = col2.slider('Travel Time Davis Dam to BBBLC',0,15,0)
-    col2.header('Lagged Hours: ' + str(hours1))
-    df_bordata.iloc[:,[0]] = df_bordata.iloc[:,[0]].shift(hours1)
-    plotData(df_bordata.dropna(), col2)
-    show_stats(df_bordata)
+    BBB_BNB_checkbox = col1.checkbox('Blw Big Bend / Blw. Needles Bridge Flows', value = False)
+    if BBB_BNB_checkbox:
+        df_bbbbnb = bor_all.iloc[:,[1,2]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours2 = col2.slider('Travel Time BBBLC to BNBLC', 0, 15, 0)
+        setup_reach(df_bbbbnb, hours2)
 
-BBB_BNB_checkbox = col1.checkbox('Blw Big Bend / Blw. Needles Bridge Flows', value = False)
+    BNB_RS41_checkbox = col1.checkbox('Blw. Needles Bridge / RS41 Flows', value = False)
+    if BNB_RS41_checkbox:
+        df_bnbrs41 = bor_all.iloc[:,[2,3]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours3 = col2.slider('Travel Time BNBLC to RS41', 0, 15, 0)
+        setup_reach(df_bnbrs41, hours3)
 
-if BBB_BNB_checkbox:
-    df_bordata = load_data('2336,7777', 'HR', t1, t2)
-    df_bordata.columns = ['BBBLC', 'BNBLC']
-    col2.header("Use the slider to lag flow.")
-    hours2 = col2.slider('Travel Time BBBLC to BNBLC', 0, 15, 0)
-    col2.header('Lagged Hours: ' + str(hours2))
-    df_bordata.iloc[:, [0]] = df_bordata.iloc[:, [0]].shift(hours2)
-    plotData(df_bordata.dropna(), col2)
-    show_stats(df_bordata)
+    Dvs_RS41_checkbox = col1.checkbox('Davis / RS41 Flows', value = False)
+    if Dvs_RS41_checkbox:
+        df_dvsrs41 = load_data('2166,2337','HR',t1,t2)
+        col2.subheader("Use the slider to lag flow.")
+        hours4 = col2.slider('Travel Time Davis Dam to RS41',0,15,0)
+        setup_reach(df_dvsrs41, hours4)
+else:
+    col1.markdown("""
+        """)
+    Pkr_usgs_checkbox = col1.checkbox('Parker / Below Parker Flows', value=False)
+    if Pkr_usgs_checkbox:
+        df_pkrusgs = bor_all.iloc[:,[4,15]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours01 = col2.slider('Travel Time Parker Dam to Blw Parker USGS Gage',0,15,0)
+        setup_reach(df_pkrusgs, hours01)
 
-BNB_RS41_checkbox = col1.checkbox('Blw. Needles Bridge / RS41 Flows', value = False)
+    Pkr_pg_checkbox = col1.checkbox('Parker Release / Parker Gage Flows', value=False)
+    if Pkr_pg_checkbox:
+        df_pkrpg = bor_all.iloc[:, [4, 5]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours1 = col2.slider('Travel Time Parker Dam to Parker Gage', 0, 15, 0)
+        setup_reach(df_pkrpg, hours1)
 
-if BNB_RS41_checkbox:
-    df_bordata = load_data('7777,2337', 'HR', t1, t2)
-    df_bordata.columns = ['BNBLC', 'RS41']
-    col2.header("Use the slider to lag flow.")
-    hours3 = col2.slider('Travel Time BNBLC to RS41', 0, 15, 0)
-    col2.header('Lagged Hours: ' + str(hours3))
-    df_bordata.iloc[:, [0]] = df_bordata.iloc[:, [0]].shift(hours3)
-    plotData(df_bordata.dropna(), col2)
-    show_stats(df_bordata)
+    pg_ww_checkbox = col1.checkbox('Parker gage / Water Wheel Flows', value=False)
+    if pg_ww_checkbox:
+        df_pgww = bor_all.iloc[:, [5, 6]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours2 = col2.slider('Travel Time Parker Gage to Water Wheel Gage', 0, 15, 0)
+        setup_reach(df_pgww, hours2)
 
-Dvs_RS41_checkbox = col1.checkbox('Davis / RS41 Flows', value = False)
+    pg_pvid_checkbox = col1.checkbox('Parker gage / Below Palo Verde Dam Flows', value=False)
+    if pg_pvid_checkbox:
+        df_pgpvid = bor_all.iloc[:, [5, 16]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours3 = col2.slider('Travel Time Parker Gage to Below Palo Verde Dam Gage', 0, 20, 0)
+        setup_reach(df_pgpvid, hours3)
 
-if Dvs_RS41_checkbox:
-    df_bordata = load_data('2166,2337','HR',t1,t2)
-    df_bordata.columns = ['Davis Release','RS41']
-    col2.header("Use the slider to lag flow.")
-    hours4 = col2.slider('Travel Time Davis Dam to RS41',0,15,0)
-    col2.header('Lagged Hours: ' + str(hours4))
-    df_bordata.iloc[:,[0]] = df_bordata.iloc[:,[0]].shift(hours4)
-    plotData(df_bordata.dropna(), col2)
-    show_stats(df_bordata)
+    pvid_tf_checkbox = col1.checkbox('Below Palo Verde Dam / Taylor Ferry Gage Flows', value=False)
+    if pvid_tf_checkbox:
+        df_pvidtf = bor_all.iloc[:, [16, 9]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours4 = col2.slider('Travel Time Below Palo Verde Dam Gage to Taylor Ferry', 0, 20, 0)
+        setup_reach(df_pvidtf, hours4)
+
+    tf_c_checkbox = col1.checkbox('Taylor Ferry / Cibola Gage Flows', value=False)
+    if tf_c_checkbox:
+        df_tfc = bor_all.iloc[:, [9, 11]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours5 = col2.slider('Travel Time Taylor Ferry to Cibola', 0, 20, 0)
+        setup_reach(df_tfc, hours5)
+
+    c_ml_checkbox = col1.checkbox('Cibola / Martinez Lake Gage Flows', value=False)
+    if c_ml_checkbox:
+        df_cml = bor_all.iloc[:, [11, 13]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours6 = col2.slider('Travel Time Cibola to Martinez Lake', 0, 20, 0)
+        setup_reach(df_cml, hours6)
+
+    Pkr_ml_checkbox = col1.checkbox('Parker Release / Martinez Lake Gage Flows', value=False)
+    if Pkr_ml_checkbox:
+        df_pkrml = bor_all.iloc[:, [4, 13]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours7 = col2.slider('Travel Time Parker Dam to Martinez Lake', 0, 70, 0)
+        setup_reach(df_pkrml, hours7)

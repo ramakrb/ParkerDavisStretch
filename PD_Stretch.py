@@ -12,14 +12,13 @@ from bs4 import BeautifulSoup
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
-from climata.usgs import DailyValueIO
-from climata.usgs import InstantValueIO
+import dataretrieval.nwis as nwis
 
 st.set_page_config(page_title="USBR API Data Explorer", page_icon=None, layout='wide', initial_sidebar_state='auto')
 
 #maindf=pd.DataFrame()
 col1, col2, col3 = st.beta_columns((1,3,1))
-col1.title("Davis Stretch")
+col1.title("Davis and Parker Stretch")
 #st.header("Make Site / Parameter selection from the sidebar")
 today = datetime.date.today() + datetime.timedelta(days=1)
 previous = today + datetime.timedelta(days=-6)
@@ -37,36 +36,26 @@ def load_data(sdid, sel_int, t1, t2, db='lchdb'):
     html = pd.read_html(url)
     df1 = html[0]
     df1['DATETIME'] = pd.to_datetime(df1['DATETIME'])
-    df1.set_index('DATETIME', inplace=True)
+    df1 = df1.rename(columns={'DATETIME': 'datetime'})
+    df1.set_index('datetime', inplace=True)
     return df1
 
 
-def usgs_data(station_id, sel_int, t1, t2):
+def usgs_data(siteNumber, t1, t2,sel_int = 'HR',parameterCd = '00060'):
     if (sel_int == 'HR'):
-        data = InstantValueIO(
-            start_date=t1,
-            end_date=t2,
-            station=station_id,
-            parameter="00060"
-        )
+        service='iv'
     else:
-        data = DailyValueIO(
-            start_date=t1,
-            end_date=t2,
-            station=station_id,
-            parameter="00060"
-        )
-    for series in data:
-        flow = [r[1] for r in series.data]
-        dates = [r[0] for r in series.data]
-    site_name = data[0].site_name.split(",", 1)[0]
-    dfusgsinst = pd.DataFrame({'Date': dates, 'Flow': flow})
-    dfusgsinst.rename(columns={'Flow': site_name}, inplace=True)
-    dfusgsinst['Date'] = dfusgsinst['Date'].dt.tz_localize(None)
-    return (dfusgsinst)
+        service='dv'
+    data = nwis.get_record(sites=siteNumber, service=service, start=t1, end=t2,parameterCd=parameterCd)
+    site_info, md = nwis.get_info(sites=siteNumber)
+    df = data.iloc[:,0:1]
+    cname = site_info['station_nm'].iloc[0].split(',')[0]
+    df.columns = [cname.title() + ' (USGS)']
+    df = df.tz_localize(None)
+    return (df)
 
 def set_pub():
-    rc('font', weight='bold')    # bold fonts are easier to see
+    rc('font', weight='bold')
     rc('grid', c='0.5', ls='-', lw=0.5)
     rc('figure', figsize = (10,6))
     plt.style.use('bmh')
@@ -76,10 +65,14 @@ def set_pub():
 def plotData(df, colm):
     set_pub()
     plot_name = ' & '.join(df.columns)
-    fig = make_subplots(rows=1, cols=1, subplot_titles = [plot_name])
+    fig = make_subplots(rows=1, cols=1, subplot_titles=[plot_name])
     fig.append_trace(go.Scatter(x = df.index, y=df.iloc[:,0], mode='lines+markers', name=df.columns[0]), row=1, col=1)
     fig.append_trace(go.Scatter(x=df.index, y=df.iloc[:, 1], mode='lines+markers', name=df.columns[1]), row=1, col=1)
-    fig.update_layout(height=700, width=1200, showlegend=True)#, title_text="Stacked Subplots")
+    fig.update_layout(height=500, width=850, legend=dict(orientation="h"))#,
+                                                         #yanchor="bottom",
+                                                         #y=1.02,
+                                                         #xanchor="right",
+                                                        # x=1))#showlegend=True)
     colm.plotly_chart(fig)
 
 def flow_stats(df):
@@ -90,23 +83,20 @@ def flow_stats(df):
     def nashsutcliffe(evaluation,simulation):
         if len(evaluation) == len(simulation):
             s, e = np.array(simulation), np.array(evaluation)
-            # s,e=simulation,evaluation
             mean_observed = np.nanmean(e)
-            # compute numerator and denominator
             numerator = np.nansum((e - s) ** 2)
             denominator = np.nansum((e - mean_observed) ** 2)
-            # compute coefficient
             return 1 - (numerator / denominator)
     nse = nashsutcliffe(df.iloc[:,0], df.iloc[:,1])
     data = {'Name':['Correlation','RMSE','R Squared','NSE'],
             'Value':[corr1,rmse1,r2,nse]}
     stat_tbl = pd.DataFrame(data)
-    return stat_tbl #round(rmse1,4)
+    return stat_tbl
 
 def show_stats(df):
     df1 = flow_stats(df.dropna()).style.set_properties(**{'background-color': 'black',
                                                          'color': 'lawngreen',
-                                                         'font-size': '11pt',
+                                                         'font-size': '9pt',
                                                          'border-color': 'white', **{'width': '120px'}})
     col3.markdown("""
         ***
@@ -127,13 +117,22 @@ def show_stats(df):
             ***
             ***
             ***
-            ***
-            ***
-            ***
-            ***
-            *** 
-            ***
             """)
+
+Dvs_usgs_checkbox = col1.checkbox('Davis / Below Davis USGS Flows', value = False)
+
+if Dvs_usgs_checkbox:
+    df_bor = load_data('2166','HR',t1,t2)
+    df_bor.columns = ['Davis Release']
+    df_usgs = usgs_data('09423000',t1,t2)
+    df_bordata = df_bor.join(df_usgs, how='inner')
+
+    col2.header("Use the slider to lag flow.")
+    hours01 = col2.slider('Travel Time Davis Dam to Blw Davis USGS Gage',0,15,0)
+    col2.header('Lagged Hours: ' + str(hours01))
+    df_bordata.iloc[:,[0]] = df_bordata.iloc[:,[0]].shift(hours01)
+    plotData(df_bordata.dropna(), col2)
+    show_stats(df_bordata)
 
 Dvs_BBB_checkbox = col1.checkbox('Davis / Below Big Bend Flows', value = False)
 

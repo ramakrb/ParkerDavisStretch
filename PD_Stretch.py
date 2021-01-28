@@ -93,7 +93,7 @@ def flow_stats(df):
             denominator = np.nansum((e - mean_observed) ** 2)
             return 1 - (numerator / denominator)
     nse = nashsutcliffe(df.iloc[:,0], df.iloc[:,1])
-    data = {'Name':['Correlation','ME,'RMSE','R Squared','NSE'],
+    data = {'Name':['Correlation','ME','RMSE','R Squared','NSE'],
             'Value':[corr1,me1,rmse1,r2,nse]}
     stat_tbl = pd.DataFrame(data)
     return stat_tbl

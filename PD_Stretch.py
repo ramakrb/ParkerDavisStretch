@@ -81,6 +81,7 @@ def plotData(df, colm):
 
 def flow_stats(df):
     rmse1 = ((df.iloc[:,0]-df.iloc[:,1])**2).mean() ** 0.5
+    me1 = (df.iloc[:,0]-df.iloc[:,1]).mean()
     corr1 = df.iloc[:,0].corr(df.iloc[:,1])
     _, _, r_value, _, _ = stats.linregress(df.iloc[:,0], df.iloc[:,1])
     r2 = r_value**2
@@ -92,8 +93,8 @@ def flow_stats(df):
             denominator = np.nansum((e - mean_observed) ** 2)
             return 1 - (numerator / denominator)
     nse = nashsutcliffe(df.iloc[:,0], df.iloc[:,1])
-    data = {'Name':['Correlation','RMSE','R Squared','NSE'],
-            'Value':[corr1,rmse1,r2,nse]}
+    data = {'Name':['Correlation','ME,'RMSE','R Squared','NSE'],
+            'Value':[corr1,me1,rmse1,r2,nse]}
     stat_tbl = pd.DataFrame(data)
     return stat_tbl
 

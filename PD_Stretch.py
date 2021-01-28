@@ -16,10 +16,8 @@ import dataretrieval.nwis as nwis
 
 st.set_page_config(page_title="USBR API Data Explorer", page_icon=None, layout='wide', initial_sidebar_state='auto')
 
-#maindf=pd.DataFrame()
 col1, col2, col3 = st.beta_columns((1,3,1))
 col1.title("Davis and Parker Stretch")
-#st.header("Make Site / Parameter selection from the sidebar")
 today = datetime.date.today() + datetime.timedelta(days=1)
 previous = today + datetime.timedelta(days=-6)
 start_date = col1.date_input('Start Date',previous)
@@ -68,11 +66,7 @@ def plotData(df, colm):
     fig = make_subplots(rows=1, cols=1, subplot_titles=[plot_name])
     fig.append_trace(go.Scatter(x = df.index, y=df.iloc[:,0], mode='lines+markers', name=df.columns[0]), row=1, col=1)
     fig.append_trace(go.Scatter(x=df.index, y=df.iloc[:, 1], mode='lines+markers', name=df.columns[1]), row=1, col=1)
-    fig.update_layout(height=500, width=850, legend=dict(orientation="h"))#,
-                                                         #yanchor="bottom",
-                                                         #y=1.02,
-                                                         #xanchor="right",
-                                                        # x=1))#showlegend=True)
+    fig.update_layout(height=500, width=850, legend=dict(orientation="h"))
     colm.plotly_chart(fig)
 
 def flow_stats(df):

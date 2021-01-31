@@ -6,3 +6,4 @@ pandas==1.0.5
 matplotlib==3.3.3
 beautifulsoup4==4.9.3
 dataretrieval==0.6
+lxml==4.6.2

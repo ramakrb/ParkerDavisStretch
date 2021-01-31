@@ -1,0 +1,8 @@
+numpy==1.19.0
+plotly==4.9.0
+streamlit==0.75.0
+scipy==1.6.0
+pandas==1.0.5
+matplotlib==3.3.3
+beautifulsoup4==4.9.3
+dataretrieval==0.6

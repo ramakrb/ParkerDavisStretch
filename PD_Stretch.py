@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
+import base64
 from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import rc
@@ -14,14 +15,15 @@ import dataretrieval.nwis as nwis
 
 st.set_page_config(page_title="USBR API Data Explorer", page_icon=None, layout='wide', initial_sidebar_state='auto')
 
-sdids = ['2166','2336','7777','2337','2146','2119','2021','20179','20189','2020','20184','2013','21877','2731']
-sites = ['Davis Release','BBBLC','BNBLC','RS41LC','Parker Release','PGLC','WWLC','BIBLC','BMPLC','TFLC','BOBLC','CLC','PPGLC','MLLC']
+sdids = ['2166','2336','7777','2337','2146','2119','2021','20179','20189','2020','20184','2013','21877','2731','1872']
+sites = ['Davis Release','BBBLC','BNBLC','RS41LC','Parker Release','PGLC','WWLC','BIBLC','BMPLC','TFLC','BOBLC','CLC','PPGLC','MLLC','Powell Release']
 bor_sites = dict(zip(sdids, sites))
 
 col1, col2, col3 = st.beta_columns((1,3,1))
 col1.title("Davis and Parker Stretch")
-sdid_list = ",".join(sdids[:-2])
+sdid_list = ",".join(sdids[:-3])
 sdid_yao = '21877,2731'
+sdid_powell = '1872'
 today = datetime.date.today() + datetime.timedelta(days=1)
 previous = today + datetime.timedelta(days=-6)
 start_date = col1.date_input('Start Date',previous)
@@ -54,6 +56,7 @@ def usgs_data(siteNumber, t1, t2,sel_int = 'HR',parameterCd = '00060'):
     cname = site_info['station_nm'].iloc[0].split(',')[0]
     df.columns = [cname.title() + ' (USGS)']
     df = df.tz_localize(None)
+    df = df.resample('60min').mean()
     return (df)
 
 def bor_usgs(bor,usgs,t1,t2):
@@ -71,6 +74,8 @@ def set_pub():
 
 
 def plotData(df, colm):
+    href = createhref(df)
+    df = df.dropna()
     set_pub()
     plot_name = ' & '.join(df.columns)
     fig = make_subplots(rows=1, cols=1, subplot_titles=[plot_name])
@@ -78,6 +83,13 @@ def plotData(df, colm):
     fig.append_trace(go.Scatter(x=df.index, y=df.iloc[:, 1], mode='lines+markers', name=df.columns[1]), row=1, col=1)
     fig.update_layout(height=500, width=850, legend=dict(orientation="h"))
     colm.plotly_chart(fig)
+    colm.markdown(href, unsafe_allow_html=True)
+
+def createhref(df):
+    csv = df.to_csv(index=True)
+    b64 = base64.b64encode(csv.encode()).decode()
+    href = f'<a href="data:file/csv;base64,{b64}">Download Data as CSV File</a> (right-click and save as &lt;some_name&gt;.csv)'
+    return href
 
 def flow_stats(df):
     rmse1 = ((df.iloc[:,0]-df.iloc[:,1])**2).mean() ** 0.5
@@ -127,7 +139,7 @@ def show_stats(df):
 def setup_reach(df,hr):
     col2.subheader('Lagged Hours: ' + str(hr))
     df.iloc[:, [0]] = df.iloc[:, [0]].shift(hr)
-    plotData(df.dropna(), col2)
+    plotData(df, col2)
     show_stats(df)
 @st.cache
 def get_all_data(t1,t2):
@@ -137,11 +149,16 @@ def get_all_data(t1,t2):
     all = all.join(usgs_data('09423000', t1, t2), how='inner')
     all = all.join(usgs_data('09427520', t1, t2), how='inner')
     all = all.join(usgs_data('09429100', t1, t2), how='inner')
+    uc1 = load_data(sdid_powell, 'HR', t1, t2, db='uchdb2')
+    all = all.join(uc1.round(), how='inner')
+    all = all.join(usgs_data('09380000', t1, t2), how='inner')
+    all = all.join(usgs_data('09402500', t1, t2), how='inner')
+    all = all.join(usgs_data('09404200', t1, t2), how='inner')
     return all
 
 
 bor_all = get_all_data(t1,t2)
-selected_stretch = col1.radio("Stretch", ['Below Davis Stretch', 'Below Parker Stretch'])
+selected_stretch = col1.radio("Stretch", ['Glen Canyon to Hoover','Below Davis Stretch', 'Below Parker Stretch'])
 if (selected_stretch == 'Below Davis Stretch'):
     col1.markdown("""
     """)
@@ -179,7 +196,7 @@ if (selected_stretch == 'Below Davis Stretch'):
         col2.subheader("Use the slider to lag flow.")
         hours4 = col2.slider('Travel Time Davis Dam to RS41',0,15,0)
         setup_reach(df_dvsrs41, hours4)
-else:
+elif (selected_stretch == 'Below Parker Stretch'):
     col1.markdown("""
         """)
     Pkr_usgs_checkbox = col1.checkbox('Parker / Below Parker Flows', value=False)
@@ -237,3 +254,27 @@ else:
         col2.subheader("Use the slider to lag flow.")
         hours7 = col2.slider('Travel Time Parker Dam to Martinez Lake', 0, 70, 0)
         setup_reach(df_pkrml, hours7)
+
+else:
+    col1.markdown("""
+    """)
+    Glen_LF_checkbox = col1.checkbox('Glen Canyon / Lees Ferry USGS Flows', value = False)
+    if Glen_LF_checkbox:
+        df_glenlf = bor_all.iloc[:, [17,18]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours01 = col2.slider('Travel Time Glen Canyon to Lees Ferry USGS Gage',0,15,0)
+        setup_reach(df_glenlf, hours01)
+
+    LF_GC_checkbox = col1.checkbox('Lees Ferry / Grand Canyon USGS Flows', value = False)
+    if LF_GC_checkbox:
+        df_lfgc = bor_all.iloc[:, [18,19]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours1 = col2.slider('Travel Time Lees Ferry to Grand Canyon USGS Gage',0,30,0)
+        setup_reach(df_lfgc, hours1)
+
+    GC_DC_checkbox = col1.checkbox('Grand Canyon / Diamond Creek USGS Flows', value = False)
+    if GC_DC_checkbox:
+        df_gcdc = bor_all.iloc[:, [19,20]].copy()
+        col2.subheader("Use the slider to lag flow.")
+        hours2 = col2.slider('Travel Time Grand Canyon to Diamond Creek USGS Gage',0,30,0)
+        setup_reach(df_gcdc, hours2)

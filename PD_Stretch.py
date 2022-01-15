@@ -20,7 +20,7 @@ sites = ['Davis Release','BBBLC','BNBLC','RS41LC','Parker Release','PGLC','WWLC'
 bor_sites = dict(zip(sdids, sites))
 
 col1, col2, col3 = st.beta_columns((1,3,1))
-col1.title("Davis and Parker Stretch")
+col1.title("Glen Canyon to Imperial Dam Stretch")
 sdid_list = ",".join(sdids[:-3])
 sdid_yao = '21877,2731'
 sdid_powell = '1872'

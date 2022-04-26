@@ -8,7 +8,6 @@ from matplotlib.pyplot import rc
 import numpy as np
 import os
 from bs4 import BeautifulSoup
-import html5lib
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go

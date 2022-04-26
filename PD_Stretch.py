@@ -19,7 +19,7 @@ sdids = ['2166','2336','7777','2337','2146','2119','2021','20179','20189','2020'
 sites = ['Davis Release','BBBLC','BNBLC','RS41LC','Parker Release','PGLC','WWLC','BIBLC','BMPLC','TFLC','BOBLC','CLC','PPGLC','MLLC','Powell Release']
 bor_sites = dict(zip(sdids, sites))
 
-col1, col2, col3 = st.beta_columns((1,3,1))
+col1, col2, col3 = st.columns((1,3,1))
 col1.title("Glen Canyon to Imperial Dam Stretch")
 sdid_list = ",".join(sdids[:-3])
 sdid_yao = '21877,2731'

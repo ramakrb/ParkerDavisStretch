@@ -114,7 +114,7 @@ def show_stats(df):
     df1 = flow_stats(df.dropna()).style.set_properties(**{'background-color': 'black',
                                                          'color': 'lawngreen',
                                                          'font-size': '9pt',
-                                                         'border-color': 'white', **{'width': '120px'}})
+                                                         'border-color': 'white', **{'width': '100px'}})
     col3.markdown("""
         ***
         ***

@@ -108,7 +108,7 @@ def flow_stats(df):
     data = {'Name':['Correlation','ME','RMSE','R Squared','NSE'],
             'Value':[corr1,me1,rmse1,r2,nse]}
     stat_tbl = pd.DataFrame(data)
-    return stat_tbl
+    return stat_tbl.round(4)
 
 def show_stats(df):
     df1 = flow_stats(df.dropna()).style.set_properties(**{'background-color': 'black',

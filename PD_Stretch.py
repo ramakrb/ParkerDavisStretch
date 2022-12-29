@@ -115,8 +115,8 @@ def show_stats(df):
                                                          'color': 'lawngreen',
                                                          'font-size': '9pt',
                                                          'border-color': 'white', **{'width': '120px'}}) \
-                                        .format({ "Value": "{:.3f}"}) \
-                                        .set_properties(subset=['Name'], **{'width': '80px'})
+                                        .format({ "Value": "{:.3f}"}) #\
+                                        #.set_properties(subset=['Name'], **{'width': '80px'})
     #df1 = df1.style.format({ "Value": "{:.3f}"})
     col3.markdown("""
         ***
@@ -129,7 +129,7 @@ def show_stats(df):
         ***  
         """)
     col3.subheader('Here are some stats!')
-    col3.dataframe(df1)
+    col3.dataframe(df1, width=200)
     col3.markdown("""
             ***
             ***

@@ -146,8 +146,8 @@ def get_all_data(t1,t2):
     lc1 = load_data(sdid_list, 'HR', t1, t2)
     yao1 = load_data(sdid_yao, 'HR', t1, t2, db='yaohdb')
     all = lc1.join(yao1.round(), how='inner')
-    all = all.join(usgs_data('09423000', t1, t2), how='inner')
-    all = all.join(usgs_data('09427520', t1, t2), how='inner')
+    # all = all.join(usgs_data('09423000', t1, t2), how='inner')
+    # all = all.join(usgs_data('09427520', t1, t2), how='inner')
     all = all.join(usgs_data('09429100', t1, t2), how='inner')
     uc1 = load_data(sdid_powell, 'HR', t1, t2, db='uchdb2')
     all = all.join(uc1.round(), how='inner')
@@ -162,12 +162,12 @@ selected_stretch = col1.radio("Stretch", ['Glen Canyon to Hoover','Below Davis S
 if (selected_stretch == 'Below Davis Stretch'):
     col1.markdown("""
     """)
-    Dvs_usgs_checkbox = col1.checkbox('Davis / Below Davis USGS Flows', value = False)
-    if Dvs_usgs_checkbox:
-        df_dvsusgs = bor_all.iloc[:,[0,14]].copy()
-        col2.subheader("Use the slider to lag flow.")
-        hours01 = col2.slider('Travel Time Davis Dam to Blw Davis USGS Gage',0,15,0)
-        setup_reach(df_dvsusgs, hours01)
+   # Dvs_usgs_checkbox = col1.checkbox('Davis / Below Davis USGS Flows', value = False)
+   # if Dvs_usgs_checkbox:
+   #     df_dvsusgs = bor_all.iloc[:,[0,14]].copy()
+   #     col2.subheader("Use the slider to lag flow.")
+   #     hours01 = col2.slider('Travel Time Davis Dam to Blw Davis USGS Gage',0,15,0)
+   #     setup_reach(df_dvsusgs, hours01)
 
     Dvs_BBB_checkbox = col1.checkbox('Davis / Below Big Bend Flows', value = False)
     if Dvs_BBB_checkbox:
@@ -199,12 +199,12 @@ if (selected_stretch == 'Below Davis Stretch'):
 elif (selected_stretch == 'Below Parker Stretch'):
     col1.markdown("""
         """)
-    Pkr_usgs_checkbox = col1.checkbox('Parker / Below Parker Flows', value=False)
-    if Pkr_usgs_checkbox:
-        df_pkrusgs = bor_all.iloc[:,[4,15]].copy()
-        col2.subheader("Use the slider to lag flow.")
-        hours01 = col2.slider('Travel Time Parker Dam to Blw Parker USGS Gage',0,15,0)
-        setup_reach(df_pkrusgs, hours01)
+   # Pkr_usgs_checkbox = col1.checkbox('Parker / Below Parker Flows', value=False)
+   # if Pkr_usgs_checkbox:
+   #     df_pkrusgs = bor_all.iloc[:,[4,15]].copy()
+   #     col2.subheader("Use the slider to lag flow.")
+   #     hours01 = col2.slider('Travel Time Parker Dam to Blw Parker USGS Gage',0,15,0)
+   #     setup_reach(df_pkrusgs, hours01)
 
     Pkr_pg_checkbox = col1.checkbox('Parker Release / Parker Gage Flows', value=False)
     if Pkr_pg_checkbox:

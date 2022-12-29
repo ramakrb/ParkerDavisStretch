@@ -129,7 +129,7 @@ def show_stats(df):
         ***  
         """)
     col3.subheader('Here are some stats!')
-    col3.dataframe(df1)
+    col3.dataframe(df1,use_container_width=True)
     col3.markdown("""
             ***
             ***

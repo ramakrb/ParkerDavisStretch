@@ -222,14 +222,14 @@ elif (selected_stretch == 'Below Parker Stretch'):
 
     pg_pvid_checkbox = col1.checkbox('Parker gage / Below Palo Verde Dam Flows', value=False)
     if pg_pvid_checkbox:
-        df_pgpvid = bor_all.iloc[:, [5, 16]].copy()
+        df_pgpvid = bor_all.iloc[:, [5, 14]].copy()
         col2.subheader("Use the slider to lag flow.")
         hours3 = col2.slider('Travel Time Parker Gage to Below Palo Verde Dam Gage', 0, 20, 0)
         setup_reach(df_pgpvid, hours3)
 
     pvid_tf_checkbox = col1.checkbox('Below Palo Verde Dam / Taylor Ferry Gage Flows', value=False)
     if pvid_tf_checkbox:
-        df_pvidtf = bor_all.iloc[:, [16, 9]].copy()
+        df_pvidtf = bor_all.iloc[:, [14, 9]].copy()
         col2.subheader("Use the slider to lag flow.")
         hours4 = col2.slider('Travel Time Below Palo Verde Dam Gage to Taylor Ferry', 0, 20, 0)
         setup_reach(df_pvidtf, hours4)
@@ -260,21 +260,21 @@ else:
     """)
     Glen_LF_checkbox = col1.checkbox('Glen Canyon / Lees Ferry USGS Flows', value = False)
     if Glen_LF_checkbox:
-        df_glenlf = bor_all.iloc[:, [17,18]].copy()
+        df_glenlf = bor_all.iloc[:, [15,16]].copy()
         col2.subheader("Use the slider to lag flow.")
         hours01 = col2.slider('Travel Time Glen Canyon to Lees Ferry USGS Gage',0,15,0)
         setup_reach(df_glenlf, hours01)
 
     LF_GC_checkbox = col1.checkbox('Lees Ferry / Grand Canyon USGS Flows', value = False)
     if LF_GC_checkbox:
-        df_lfgc = bor_all.iloc[:, [18,19]].copy()
+        df_lfgc = bor_all.iloc[:, [16,17]].copy()
         col2.subheader("Use the slider to lag flow.")
         hours1 = col2.slider('Travel Time Lees Ferry to Grand Canyon USGS Gage',0,30,0)
         setup_reach(df_lfgc, hours1)
 
     GC_DC_checkbox = col1.checkbox('Grand Canyon / Diamond Creek USGS Flows', value = False)
     if GC_DC_checkbox:
-        df_gcdc = bor_all.iloc[:, [19,20]].copy()
+        df_gcdc = bor_all.iloc[:, [17,18]].copy()
         col2.subheader("Use the slider to lag flow.")
         hours2 = col2.slider('Travel Time Grand Canyon to Diamond Creek USGS Gage',0,30,0)
         setup_reach(df_gcdc, hours2)

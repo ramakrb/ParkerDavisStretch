@@ -92,9 +92,9 @@ def createhref(df):
     return href
 
 def flow_stats(df):
-    rmse1 = round(((df.iloc[:,0]-df.iloc[:,1])**2).mean() ** 0.5,2)
-    me1 = round((df.iloc[:,0]-df.iloc[:,1]).mean(),2)
-    corr1 = round(df.iloc[:,0].corr(df.iloc[:,1]),3)
+    rmse1 = ((df.iloc[:,0]-df.iloc[:,1])**2).mean() ** 0.5
+    me1 = (df.iloc[:,0]-df.iloc[:,1]).mean()
+    corr1 = df.iloc[:,0].corr(df.iloc[:,1])
     _, _, r_value, _, _ = stats.linregress(df.iloc[:,0], df.iloc[:,1])
     r2 = round(r_value**2,3)
     def nashsutcliffe(evaluation,simulation):
@@ -104,7 +104,7 @@ def flow_stats(df):
             numerator = np.nansum((e - s) ** 2)
             denominator = np.nansum((e - mean_observed) ** 2)
             return 1 - (numerator / denominator)
-    nse = round(nashsutcliffe(df.iloc[:,0], df.iloc[:,1]),3)
+    nse = nashsutcliffe(df.iloc[:,0], df.iloc[:,1])
     data = {'Name':['Correlation','ME','RMSE','R Squared','NSE'],
             'Value':[corr1,me1,rmse1,r2,nse]}
     stat_tbl = pd.DataFrame(data)

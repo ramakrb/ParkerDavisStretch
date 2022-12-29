@@ -115,7 +115,8 @@ def show_stats(df):
                                                          'color': 'lawngreen',
                                                          'font-size': '9pt',
                                                          'border-color': 'white', **{'width': '120px'}}) \
-                                        .format({ "Value": "{:.3f}"})
+                                        .format({ "Value": "{:.3f}"}) \
+                                        .hide_index()
     #df1 = df1.style.format({ "Value": "{:.3f}"})
     col3.markdown("""
         ***

@@ -115,7 +115,7 @@ def show_stats(df):
                                                          'color': 'lawngreen',
                                                          'font-size': '9pt',
                                                          'border-color': 'white', **{'width': '120px'}})
-    df1 = df1.style.set_precision(3)
+    #df1 = df1.style.set_precision(3)
     col3.markdown("""
         ***
         ***

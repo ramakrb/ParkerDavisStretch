@@ -8,3 +8,4 @@ bs4==0.0.1
 dataretrieval==0.7
 lxml==4.8.0
 protobuf==3.20.*
+altair<5
